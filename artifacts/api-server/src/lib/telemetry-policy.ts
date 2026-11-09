@@ -17,7 +17,13 @@ export function dash0Configuration(endpoint?: string, token?: string) {
   }
   const authToken = token.trim().replace(/^Bearer\s+/i, "");
   if (!authToken || /\s/.test(authToken)) throw new Error("The Dash0 ingestion token format is invalid.");
-  return { baseUrl: url.origin, headers: { Authorization: `Bearer ${authToken}` } };
+  if (!authToken.startsWith("auth_")) {
+    throw new Error("The Dash0 ingestion token must be the complete Auth Token value, including its auth_ prefix. Do not add the prefix to an incomplete value; copy the complete secret from Dash0.");
+  }
+  return {
+    baseUrl: url.origin,
+    headers: { Authorization: `Bearer ${authToken}`, "Dash0-Dataset": "default" },
+  };
 }
 
 const methods = new Set(["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]);

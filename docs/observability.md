@@ -27,7 +27,9 @@ limited to 20 per process per minute. Startup probes are explicitly identified a
 Configure these values on the server:
 
 - `DASH0_AUTH_TOKEN`: an ingestion-authorized Dash0 token, without shell commands.
-  Store this in the hosting environment's Secrets manager.
+  Store the complete static Auth Token value, including its `auth_` prefix, in
+  the hosting environment's Secrets manager. Never manually reconstruct a token
+  by adding a prefix to a partial value. Missing prefixes are rejected locally.
 - `OTEL_EXPORTER_OTLP_ENDPOINT`: the organization's HTTPS OTLP/HTTP ingress endpoint.
   This URL is not a credential and can be stored as an environment variable.
   Copy it from Dash0 **Settings → Endpoints → OTLP/HTTP**. Do not use the panel URL,
@@ -40,9 +42,15 @@ A root endpoint or a `/v1/traces`, `/v1/metrics` or `/v1/logs` suffix is accepte
 the exporter selects the three signal paths itself. Do not add these server
 credentials to any `VITE_*` variable or commit them to Git.
 
-This initial integration uses the token's default ingestion destination. For a
-token that requires an explicit dataset header, configure dataset support before
-using it; do not broaden permissions just to bypass an ingestion rejection.
+All three exporters explicitly send `Dash0-Dataset: default`. The token needs
+ingestion access to that dataset for spans, metrics and logs. Do not broaden
+permissions just to bypass an ingestion rejection. The regional `api.*` endpoint
+and its timerange query are for reading data, not exporting telemetry; API reading
+permissions are not required for this integration.
+
+Do not paste tokens or authenticated example commands into chat, source files,
+logs or screenshots. If a token is exposed, revoke it and replace it through
+Secrets before verifying real delivery. Do not execute an exposed example command.
 
 Restart the API workflow after configuring Secrets.
 

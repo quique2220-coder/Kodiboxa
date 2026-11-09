@@ -4,12 +4,12 @@ import { EventEmitter } from "node:events";
 import type { Request, Response } from "express";
 import { createTelemetryRuntime, telemetryDelivery } from "../src/lib/telemetry";
 
-const packets: Array<{ path: string; body: Buffer }> = [];
+const packets: Array<{ path: string; body: Buffer; dataset: string | string[] | undefined }> = [];
 const collector = createServer((req, res) => {
   const chunks: Buffer[] = [];
   req.on("data", (chunk: Buffer) => chunks.push(chunk));
   req.on("end", () => {
-    packets.push({ path: req.url || "", body: Buffer.concat(chunks) });
+    packets.push({ path: req.url || "", body: Buffer.concat(chunks), dataset: req.headers["dash0-dataset"] });
     res.writeHead(200, { "content-type": "application/x-protobuf" });
     res.end();
   });
@@ -20,7 +20,7 @@ assert.ok(address && typeof address !== "string");
 // Explicit test-only collector, not production endpoint validation or a real token.
 const telemetry = createTelemetryRuntime({
   baseUrl: `http://127.0.0.1:${address.port}`,
-  headers: { Authorization: "Bearer TEST_ONLY_TOKEN" },
+  headers: { Authorization: "Bearer TEST_ONLY_TOKEN", "Dash0-Dataset": "default" },
 }, 1);
 try {
   telemetry.probe();
@@ -42,6 +42,7 @@ try {
     assert.ok(packets.some(p => p.path === `/v1/${signal}`), `missing ${signal} OTLP request`);
     assert.ok(telemetryDelivery()[signal].accepted > 0, `${signal} acknowledgement not recorded`);
   }
+  assert.ok(packets.every(p => p.dataset === "default"), "default dataset header missing from an OTLP request");
   const combined = Buffer.concat(packets.map(p => p.body)).toString("utf8");
   assert.ok(!combined.includes(sensitive), "telemetry exposed participant/request content");
   assert.ok(combined.includes("/api/sessions/:id/answers"), "declared route pattern missing");

@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { dash0Configuration, deliveryDescription, technicalRequest, type Delivery } from "../src/lib/telemetry-policy";
 
-const config = dash0Configuration("https://ingress.eu-west-1.aws.dash0.com/v1/traces", "Bearer example-token");
+const config = dash0Configuration("https://ingress.eu-west-1.aws.dash0.com/v1/traces", "Bearer auth_TEST_ONLY_TOKEN");
 assert.equal(config.baseUrl, "https://ingress.eu-west-1.aws.dash0.com");
-assert.equal(config.headers.Authorization, "Bearer example-token");
+assert.equal(config.headers.Authorization, "Bearer auth_TEST_ONLY_TOKEN");
+assert.equal(config.headers["Dash0-Dataset"], "default");
 for (const endpoint of [
   "http://ingress.eu-west-1.aws.dash0.com",
   "https://app.dash0.com", "https://ingress.evil.example",
@@ -21,6 +22,16 @@ for (const endpoint of [
 }
 assert.throws(() => dash0Configuration(undefined, undefined), /server Secrets/);
 assert.throws(() => dash0Configuration(config.baseUrl, "example\nsecret"), /format/);
+assert.throws(() => dash0Configuration(config.baseUrl, "INCOMPLETE_TEST_ONLY_TOKEN"), error => {
+  assert.ok(error instanceof Error);
+  assert.match(error.message, /complete Auth Token/);
+  assert.ok(!error.message.includes("INCOMPLETE_TEST_ONLY_TOKEN"));
+  return true;
+});
+assert.deepEqual(
+  dash0Configuration(config.baseUrl, "  auth_TEST_ONLY_TOKEN  ").headers,
+  config.headers,
+);
 
 assert.deepEqual(technicalRequest("GET", "/sessions/:id/live/captions", 200), {
   "http.request.method": "GET",
