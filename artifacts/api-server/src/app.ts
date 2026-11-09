@@ -10,6 +10,7 @@ import helmet from "helmet";
 import { rateLimit, ipKeyGenerator } from "express-rate-limit";
 import { ZodError } from "zod";
 import { getStripeSync } from "./lib/stripeClient";
+import { observeApiRequests } from "./lib/telemetry";
 
 const app: Express = express();
 
@@ -33,6 +34,7 @@ app.use(
   }),
 );
 app.set("trust proxy", 1);
+app.use("/api", observeApiRequests);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 app.use(cors({ credentials: true, origin: false }));

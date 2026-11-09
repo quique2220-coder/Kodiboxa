@@ -3,7 +3,7 @@ import { db, users, events, rooms, sessions, registrations, questions, announcem
 import { desc, eq } from "drizzle-orm";
 import { GetWorkspaceResponse } from "@workspace/api-zod";
 import { currentUser } from "../lib/auth";
-import { integrations, agents } from "../lib/platform";
+import { platformIntegrations, agents } from "../lib/platform";
 import { checkoutReady } from "../lib/stripeClient";
 import { priceCatalog, listEventCoupons } from "../lib/ticketing";
 const router: IRouter = Router();
@@ -49,7 +49,7 @@ router.get("/workspace", async (req, res): Promise<void> => {
     announcements: allAnnouncements.filter(a => allowedIds.has(a.eventId)),
     audit: admin ? await db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(100) : [],
     incidents: admin ? await db.select().from(incidents).orderBy(desc(incidents.createdAt)) : [],
-    integrations, agents,
+    integrations: platformIntegrations(admin), agents,
     checkoutReady, emailReady: false,
     coupons: admin ? await listEventCoupons() : [],
     orders: allOrders.filter(o => allowedIds.has(o.eventId) && (admin || o.userId === user?.id)).map(o => ({
