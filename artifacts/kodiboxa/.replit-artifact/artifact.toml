@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "KODIBOXA"
+description = "KODELOTH hybrid event operations platform with administrator, presenter and participant workflows."
+version = "1.0.0"
+id = "artifacts/kodiboxa"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20085
+
+[services.development]
+run = "pnpm --filter @workspace/kodiboxa run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/kodiboxa", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/kodiboxa/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20085"
+BASE_PATH = "/"

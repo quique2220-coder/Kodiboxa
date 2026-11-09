@@ -1,0 +1,1136 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 1.0.0
+  description: KODIBOXA event operations
+servers:
+  - url: /api
+paths:
+  /crm:
+    get:
+      operationId: getCrm
+      responses:
+        "200":
+          description: Administrator-only contacts, history and campaign drafts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CrmWorkspace" }
+  /crm/contacts:
+    post:
+      operationId: createCrmContact
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CrmContactInput" }
+      responses:
+        "200":
+          description: Contact created without marketing consent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommandResult" }
+  /crm/contacts/{id}:
+    patch:
+      operationId: updateCrmContact
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CrmContactUpdate" }
+      responses:
+        "200":
+          description: Contact updated; administrators cannot grant marketing consent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommandResult" }
+  /crm/sync:
+    post:
+      operationId: syncCrmContacts
+      responses:
+        "200":
+          description: Deduplicated event participants added without changing consent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommandResult" }
+  /crm/campaigns:
+    post:
+      operationId: createCrmCampaign
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CrmCampaignInput" }
+      responses:
+        "200":
+          description: Campaign saved as a draft; no messages sent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommandResult" }
+  /crm/campaigns/{id}:
+    patch:
+      operationId: updateCrmCampaign
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CrmCampaignInput" }
+      responses:
+        "200":
+          description: Draft updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommandResult" }
+    delete:
+      operationId: deleteCrmCampaign
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Draft deleted; contacts unchanged
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommandResult" }
+  /crm/campaigns/{id}/send:
+    post:
+      operationId: sendCrmCampaign
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Reserved for delivery after provider setup; currently always unavailable
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommandResult" }
+  /communication-preferences:
+    get:
+      operationId: getCommunicationPreferences
+      responses:
+        "200":
+          description: Signed-in user's own preferences only
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommunicationPreferences" }
+  /crm/integrations:
+    get:
+      operationId: getCrmIntegrations
+      responses:
+        "200":
+          description: Secret-free connection status for administrator-configured third-party services
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CrmIntegrationsResponse" }
+  /crm/integrations/neon/connect:
+    put:
+      operationId: connectCrmNeon
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NeonConnectionInput" }
+      responses:
+        "200":
+          description: Connection validated; CRM database schema is not modified
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommandResult" }
+  /crm/integrations/neon:
+    delete:
+      operationId: disconnectCrmNeon
+      responses:
+        "200":
+          description: Connection credential removed; Neon-owned data is retained
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommandResult" }
+  /crm/integrations/neon/sync:
+    post:
+      operationId: syncCrmNeon
+      responses:
+        "200":
+          description: Explicit transactional copy of CRM contacts and attendance history
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommandResult" }
+  /crm/integrations/zapier/connect:
+    put:
+      operationId: connectCrmZapier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ZapierWebhookInput" }
+      responses:
+        "200":
+          description: Zapier Catch Hook validated and encrypted at rest
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommandResult" }
+  /crm/integrations/zapier:
+    delete:
+      operationId: disconnectCrmZapier
+      responses:
+        "200":
+          description: Zapier credential removed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommandResult" }
+  /crm/integrations/zapier/test:
+    post:
+      operationId: testCrmZapier
+      responses:
+        "200":
+          description: Data-free integration test delivered to the configured Zapier hook
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommandResult" }
+  /crm/integrations/zapier/sync:
+    post:
+      operationId: syncCrmZapier
+      responses:
+        "200":
+          description: Explicit snapshot of channel-consented verified contacts delivered to Zapier
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommandResult" }
+    put:
+      operationId: saveCommunicationPreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CommunicationPreferenceInput" }
+      responses:
+        "200":
+          description: Own explicit consent or withdrawal recorded
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommunicationPreferences" }
+  /sessions/{id}/engagement:
+    get:
+      operationId: getSessionEngagement
+      tags: [engagement]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Session prompts and the caller's own answer; results and identified responses only for organizers
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SessionEngagement" }
+        "401": { description: Sign-in required }
+        "403": { description: Session access required }
+        "404": { description: Session not found }
+    post:
+      operationId: openSessionCheckIn
+      tags: [engagement]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SessionCheckInInput" }
+      responses:
+        "201":
+          description: Prompt opened by an admin or assigned presenter
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SessionEngagement" }
+        "400": { description: Invalid prompt or options }
+        "401": { description: Sign-in required }
+        "403": { description: Organizer access required }
+        "404": { description: Session not found }
+        "409": { description: Session not live or another prompt is open }
+  /sessions/{id}/engagement/{checkInId}/response:
+    put:
+      operationId: answerSessionCheckIn
+      tags: [engagement]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - { name: checkInId, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SessionCheckInAnswer" }
+      responses:
+        "200":
+          description: Voluntary answer saved; replaces only this attendee's previous answer
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SessionEngagement" }
+        "400": { description: Invalid choice }
+        "401": { description: Sign-in required }
+        "403": { description: Confirmed attendee registration required }
+        "404": { description: Prompt or session not found }
+        "409": { description: Prompt closed or session not live }
+  /sessions/{id}/engagement/{checkInId}/close:
+    post:
+      operationId: closeSessionCheckIn
+      tags: [engagement]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+        - { name: checkInId, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Prompt closed; responses retained
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SessionEngagement" }
+        "401": { description: Sign-in required }
+        "403": { description: Organizer access required }
+        "404": { description: Prompt or session not found }
+  /sessions/{id}/captions:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: getSessionCaptions
+      responses:
+        "200":
+          description: Recent captions for authorized session members; temporary, not a recording
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SessionCaptions" }
+    post:
+      operationId: publishSessionCaption
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CaptionSegmentInput" }
+      responses:
+        "200":
+          description: Recognized presenter speech with translated text
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SessionCaption" }
+  /sessions/{id}/captions/start:
+    post:
+      operationId: startSessionCaptions
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CaptionStartInput" }
+      responses:
+        "200":
+          description: Presenter-only single-use speech recognition token and caption lease
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CaptionStart" }
+  /sessions/{id}/captions/heartbeat:
+    post:
+      operationId: heartbeatSessionCaptions
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CaptionStopInput" }
+      responses:
+        "204":
+          description: Active presenter's caption lease renewed for sixty seconds
+  /sessions/{id}/captions/stop:
+    post:
+      operationId: stopSessionCaptions
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CaptionStopInput" }
+      responses:
+        "204":
+          description: Caption lease revoked
+  /livekit/status:
+    get:
+      operationId: getLiveKitStatus
+      responses:
+        "200":
+          description: Whether server-side LiveKit settings are available, without exposing credentials
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LiveKitStatus" }
+  /sessions/{id}/livekit/token:
+    post:
+      operationId: createLiveKitSessionToken
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Short-lived, session-scoped token with role-derived publication permissions
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LiveKitSessionToken" }
+        "403":
+          description: Caller is neither an event participant with a confirmed registration nor an authorized presenter/administrator
+        "409":
+          description: Session is not live
+        "503":
+          description: LiveKit server credentials are missing
+  /sessions/{id}/livekit/participants:
+    get:
+      operationId: getLiveKitSessionParticipants
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Live room participants and published camera, microphone and screen-sharing tracks; admin only
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LiveKitSessionMonitor" }
+        "403":
+          description: Administrator access required
+  /room-operations:
+    get:
+      operationId: getRoomOperations
+      parameters:
+        - { name: eventId, in: query, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Administrator-only persistent room occupancy
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RoomOperations" }
+  /rooms/{id}/entry:
+    get:
+      operationId: getRoomEntry
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Own admission and room schedule; no operations counters
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RoomEntry" }
+  /healthz:
+    get:
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HealthStatus" }
+  /workspace:
+    get:
+      operationId: getWorkspace
+      responses:
+        "200":
+          description: Role-filtered workspace or public example preview
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Workspace" }
+  /commands:
+    post:
+      operationId: executeCommand
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CommandInput" }
+      responses:
+        "200":
+          description: Persisted operation
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommandResult" }
+  /ticket-checkout:
+    post:
+      operationId: startEventCheckout
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CheckoutInput" }
+      responses:
+        "200":
+          description: Reserved seat and Stripe checkout URL
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CheckoutResult" }
+  /ticket-checkout/{id}/cancel:
+    post:
+      operationId: cancelEventCheckout
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Checkout expired or already confirmed
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommandResult" }
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UploadInput" }
+      responses:
+        "200":
+          description: Direct PNG upload URL
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UploadResult" }
+  /storage/uploads/complete:
+    post:
+      operationId: completeUpload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UploadCompleteInput" }
+      responses:
+        "200":
+          description: Verified public PNG asset
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AssetResult" }
+  /storage/objects/{objectPath}:
+    get:
+      operationId: getEventAsset
+      parameters:
+        - { name: objectPath, in: path, required: true, schema: { type: string } }
+      responses:
+        "200":
+          description: Public validated PNG
+components:
+  schemas:
+    SessionCheckInInput:
+      type: object
+      required: [kind, prompt, options]
+      properties:
+        kind: { type: string, enum: [checkin, poll] }
+        prompt: { type: string, minLength: 1, maxLength: 240 }
+        options:
+          type: array
+          minItems: 2
+          maxItems: 4
+          items: { type: string, minLength: 1, maxLength: 80 }
+    SessionCheckInAnswer:
+      type: object
+      required: [choice, consent]
+      properties:
+        choice: { type: integer, minimum: 0, maximum: 3 }
+        consent: { type: boolean, enum: [true] }
+    SessionEngagement:
+      type: object
+      required: [canManage, canRespond, sessionLive, prompts]
+      properties:
+        canManage: { type: boolean }
+        canRespond: { type: boolean }
+        sessionLive: { type: boolean }
+        prompts:
+          type: array
+          items: { $ref: "#/components/schemas/SessionCheckIn" }
+    SessionCheckIn:
+      type: object
+      required: [id, kind, prompt, options, createdAt, closedAt, active, myChoice, results, responses]
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [checkin, poll] }
+        prompt: { type: string }
+        options: { type: array, items: { type: string } }
+        createdAt: { type: string }
+        closedAt: { type: [string, "null"] }
+        active: { type: boolean }
+        myChoice: { type: [integer, "null"] }
+        results:
+          description: Only supplied to admins and the assigned presenter
+          type: [object, "null"]
+          required: [totalResponses, counts]
+          properties:
+            totalResponses: { type: integer }
+            counts: { type: array, items: { type: integer } }
+        responses:
+          description: Empty for attendees; organizers see only people who voluntarily answered, never nonresponder scores
+          type: array
+          items: { $ref: "#/components/schemas/SessionCheckInResponder" }
+    SessionCheckInResponder:
+      type: object
+      required: [name, choice, updatedAt]
+      properties:
+        name: { type: string }
+        choice: { type: integer }
+        updatedAt: { type: string }
+    CrmContactInput:
+      type: object
+      required: [name, email]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        email: { type: string, format: email, maxLength: 250 }
+        phone: { type: string, maxLength: 20 }
+        company: { type: string, maxLength: 160 }
+        notes: { type: string, maxLength: 5000 }
+        tags: { type: array, maxItems: 12, items: { type: string, minLength: 1, maxLength: 40 } }
+    CrmContactUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        phone: { type: string, maxLength: 20 }
+        company: { type: string, maxLength: 160 }
+        notes: { type: string, maxLength: 5000 }
+        tags: { type: array, maxItems: 12, items: { type: string, minLength: 1, maxLength: 40 } }
+        archived: { type: boolean }
+        revokeEmail: { type: boolean }
+        revokeSms: { type: boolean }
+    ContactEventHistory:
+      type: object
+      required: [eventId, title, startsAt, attended]
+      properties:
+        eventId: { type: string }
+        title: { type: string }
+        startsAt: { type: string }
+        attended: { type: boolean }
+    CrmContact:
+      type: object
+      required: [id, name, email, phone, company, notes, tags, archived, source, emailOptIn, smsOptIn, emailVerified, phoneVerified, emailConsentAt, smsConsentAt, createdAt, updatedAt, history]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        company: { type: string }
+        notes: { type: string }
+        tags: { type: array, items: { type: string } }
+        archived: { type: boolean }
+        source: { type: string }
+        emailOptIn: { type: boolean }
+        smsOptIn: { type: boolean }
+        emailVerified: { type: boolean }
+        phoneVerified: { type: boolean }
+        emailConsentAt: { type: [string, "null"] }
+        smsConsentAt: { type: [string, "null"] }
+        createdAt: { type: string }
+        updatedAt: { type: string }
+        history: { type: array, items: { $ref: "#/components/schemas/ContactEventHistory" } }
+    CrmCampaignInput:
+      type: object
+      required: [name, channel, subject, body]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 160 }
+        channel: { type: string, enum: [email, sms] }
+        subject: { type: string, maxLength: 200 }
+        body: { type: string, maxLength: 10000 }
+        promotedEventId: { type: [string, "null"] }
+        audienceEventId: { type: [string, "null"] }
+        tag: { type: string, maxLength: 40 }
+    CrmCampaign:
+      type: object
+      required: [id, name, channel, subject, body, promotedEventId, audienceEventId, tag, status, matchingContacts, eligibleContacts, excludedContacts, updatedAt]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        channel: { type: string, enum: [email, sms] }
+        subject: { type: string }
+        body: { type: string }
+        promotedEventId: { type: [string, "null"] }
+        audienceEventId: { type: [string, "null"] }
+        tag: { type: string }
+        status: { type: string, enum: [draft] }
+        matchingContacts: { type: integer }
+        eligibleContacts: { type: integer }
+        excludedContacts: { type: integer }
+        updatedAt: { type: string }
+    CrmWorkspace:
+      type: object
+      required: [contacts, campaigns, emailReady, smsReady, deliveryReason]
+      properties:
+        contacts: { type: array, items: { $ref: "#/components/schemas/CrmContact" } }
+        campaigns: { type: array, items: { $ref: "#/components/schemas/CrmCampaign" } }
+        emailReady: { type: boolean }
+        smsReady: { type: boolean }
+        deliveryReason: { type: string }
+    CommunicationPreferenceInput:
+      type: object
+      required: [emailOptIn, smsOptIn, phone, noticeVersion]
+      properties:
+        emailOptIn: { type: boolean }
+        smsOptIn: { type: boolean }
+        phone: { type: string, maxLength: 20 }
+        noticeVersion: { type: string, maxLength: 80 }
+    CommunicationPreferences:
+      type: object
+      required: [email, phone, emailOptIn, smsOptIn, phoneVerified, deliveryAvailable, emailNotice, smsNotice, noticeVersion]
+      properties:
+        email: { type: string }
+        phone: { type: string }
+        emailOptIn: { type: boolean }
+        smsOptIn: { type: boolean }
+        phoneVerified: { type: boolean }
+        deliveryAvailable: { type: boolean }
+        emailNotice: { type: string }
+        smsNotice: { type: string }
+        noticeVersion: { type: string }
+    CrmIntegration:
+      type: object
+      required: [provider, connected, verifiedAt, lastSyncedAt]
+      properties:
+        provider: { type: string, enum: [neon, zapier] }
+        connected: { type: boolean }
+        verifiedAt: { type: [string, "null"] }
+        lastSyncedAt: { type: [string, "null"] }
+    CrmIntegrationsResponse:
+      type: object
+      required: [integrations]
+      properties:
+        integrations: { type: array, items: { $ref: "#/components/schemas/CrmIntegration" } }
+    NeonConnectionInput:
+      type: object
+      required: [connectionString]
+      properties:
+        connectionString: { type: string, minLength: 24, maxLength: 2048, format: uri }
+    ZapierWebhookInput:
+      type: object
+      required: [url]
+      properties:
+        url: { type: string, minLength: 24, maxLength: 2048, format: uri }
+    CaptionStartInput:
+      type: object
+      required: [sourceLanguage, consent]
+      properties:
+        sourceLanguage: { type: string, enum: [en, es] }
+        consent: { type: boolean, enum: [true] }
+    CaptionStart:
+      type: object
+      required: [token, leaseId, sourceLanguage]
+      properties:
+        token: { type: string }
+        leaseId: { type: string }
+        sourceLanguage: { type: string, enum: [en, es] }
+    CaptionStopInput:
+      type: object
+      required: [leaseId]
+      properties:
+        leaseId: { type: string, minLength: 1, maxLength: 100 }
+    CaptionSegmentInput:
+      type: object
+      required: [leaseId, segmentId, text]
+      properties:
+        leaseId: { type: string, minLength: 1, maxLength: 100 }
+        segmentId: { type: string, minLength: 1, maxLength: 100 }
+        text: { type: string, minLength: 1, maxLength: 2000 }
+    SessionCaption:
+      type: object
+      required: [id, text, translation, sourceLanguage, targetLanguage, speakerName, createdAt, translationStatus]
+      properties:
+        id: { type: string }
+        text: { type: string }
+        translation: { type: string }
+        sourceLanguage: { type: string, enum: [en, es] }
+        targetLanguage: { type: string, enum: [en, es] }
+        speakerName: { type: string }
+        createdAt: { type: string }
+        translationStatus: { type: string, enum: [pending, ready, unavailable] }
+    SessionCaptions:
+      type: object
+      required: [captions, active, sourceLanguage]
+      properties:
+        captions: { type: array, items: { $ref: "#/components/schemas/SessionCaption" } }
+        active: { type: boolean }
+        sourceLanguage: { type: string, enum: [en, es] }
+    LiveKitStatus:
+      type: object
+      required: [configured, setupMessage]
+      properties:
+        configured: { type: boolean }
+        setupMessage: { type: string }
+    LiveKitSessionToken:
+      type: object
+      required: [url, token, role]
+      properties:
+        url: { type: string }
+        token: { type: string }
+        role: { type: string, enum: [presenter, participant, admin] }
+    LiveKitSessionParticipant:
+      type: object
+      required: [identity, name, role, joinedAt, cameraEnabled, microphoneEnabled, screenSharing]
+      properties:
+        identity: { type: string }
+        name: { type: string }
+        role: { type: string, enum: [admin, presenter, participant, service] }
+        joinedAt: { type: integer }
+        cameraEnabled: { type: boolean }
+        microphoneEnabled: { type: boolean }
+        screenSharing: { type: boolean }
+    LiveKitSessionMonitor:
+      type: object
+      required: [sessionId, participantCount, participants]
+      properties:
+        sessionId: { type: string }
+        participantCount: { type: integer }
+        participants: { type: array, items: { $ref: "#/components/schemas/LiveKitSessionParticipant" } }
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string }
+    User:
+      type: object
+      required: [id, name, email, role]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        role: { type: string, enum: [admin, presenter, participant] }
+    Event:
+      type: object
+      required: [id, title, description, type, status, location, startsAt, endsAt, capacity, isPrivate, sponsorsVisible, registrations, checkedIn]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        type: { type: string, enum: [meeting, class, workshop, conference, hybrid] }
+        status: { type: string, enum: [draft, upcoming, live, completed] }
+        location: { type: string }
+        startsAt: { type: string }
+        endsAt: { type: string }
+        capacity: { type: integer }
+        isPrivate: { type: boolean }
+        sponsorsVisible: { type: boolean }
+        registrations: { type: integer }
+        checkedIn: { type: integer }
+        headline: { type: string }
+        bannerPath: { type: string }
+        accentColor: { type: string }
+        presenterName: { type: string }
+        presenterBio: { type: string }
+        presenterPhotoPath: { type: string }
+        stripePriceId: { type: string }
+        ticketAmount: { type: [integer, "null"] }
+        currency: { type: string }
+        reserved: { type: integer }
+    Room:
+      type: object
+      required: [id, eventId, name, capacity]
+      properties:
+        id: { type: string }
+        eventId: { type: string }
+        name: { type: string }
+        capacity: { type: integer }
+        registrations: { type: integer }
+        checkedIn: { type: integer }
+        reserved: { type: integer }
+    Session:
+      type: object
+      required: [id, eventId, roomId, title, description, presenterId, presenterName, startsAt, endsAt, status, startedAt, endedAt]
+      properties:
+        id: { type: string }
+        eventId: { type: string }
+        roomId: { type: string }
+        title: { type: string }
+        description: { type: string }
+        presenterId: { type: string }
+        presenterName: { type: string }
+        startsAt: { type: string }
+        endsAt: { type: string }
+        status: { type: string, enum: [scheduled, live, ended] }
+        startedAt: { type: [string, "null"] }
+        endedAt: { type: [string, "null"] }
+    Registration:
+      type: object
+      required: [id, eventId, userId, name, email, passCode, checkedIn, createdAt]
+      properties:
+        id: { type: string }
+        eventId: { type: string }
+        userId: { type: string }
+        name: { type: string }
+        email: { type: string }
+        passCode: { type: string }
+        checkedIn: { type: boolean }
+        createdAt: { type: string }
+        roomId: { type: [string, "null"] }
+        paymentStatus: { type: string }
+    Question:
+      type: object
+      required: [id, eventId, sessionId, userId, author, text, status, answer, createdAt]
+      properties:
+        id: { type: string }
+        eventId: { type: string }
+        sessionId: { type: string }
+        userId: { type: string }
+        author: { type: string }
+        text: { type: string }
+        status: { type: string, enum: [open, answered, dismissed] }
+        answer: { type: string }
+        createdAt: { type: string }
+    Announcement:
+      type: object
+      required: [id, eventId, title, text, author, createdAt]
+      properties:
+        id: { type: string }
+        eventId: { type: string }
+        title: { type: string }
+        text: { type: string }
+        author: { type: string }
+        createdAt: { type: string }
+    Audit:
+      type: object
+      required: [id, actor, action, detail, createdAt]
+      properties:
+        id: { type: string }
+        actor: { type: string }
+        action: { type: string }
+        detail: { type: string }
+        createdAt: { type: string }
+    Integration:
+      type: object
+      required: [id, name, status, description]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        status: { type: string, enum: [connected, unavailable, planned, demo] }
+        description: { type: string }
+    Incident:
+      type: object
+      required: [id, title, status, evidence, recommendation, beforeMs, afterMs, createdAt]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        status: { type: string, enum: [awaiting_approval, resolved] }
+        evidence: { type: string }
+        recommendation: { type: string }
+        beforeMs: { type: number }
+        afterMs: { type: [number, "null"] }
+        createdAt: { type: string }
+    Agent:
+      type: object
+      required: [id, name, description, status]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        description: { type: string }
+        status: { type: string }
+    Summary:
+      type: object
+      required: [events, liveEvents, registrations, checkedIn, openQuestions]
+      properties:
+        events: { type: integer }
+        liveEvents: { type: integer }
+        registrations: { type: integer }
+        checkedIn: { type: integer }
+        openQuestions: { type: integer }
+    Workspace:
+      type: object
+      required: [preview, user, users, events, rooms, sessions, registrations, questions, announcements, audit, integrations, incidents, agents, summary, adminConfigured]
+      properties:
+        preview: { type: boolean }
+        adminConfigured: { type: boolean }
+        user:
+          anyOf:
+            - { $ref: "#/components/schemas/User" }
+            - { type: "null" }
+        users: { type: array, items: { $ref: "#/components/schemas/User" } }
+        events: { type: array, items: { $ref: "#/components/schemas/Event" } }
+        rooms: { type: array, items: { $ref: "#/components/schemas/Room" } }
+        sessions: { type: array, items: { $ref: "#/components/schemas/Session" } }
+        registrations: { type: array, items: { $ref: "#/components/schemas/Registration" } }
+        questions: { type: array, items: { $ref: "#/components/schemas/Question" } }
+        announcements: { type: array, items: { $ref: "#/components/schemas/Announcement" } }
+        audit: { type: array, items: { $ref: "#/components/schemas/Audit" } }
+        integrations: { type: array, items: { $ref: "#/components/schemas/Integration" } }
+        incidents: { type: array, items: { $ref: "#/components/schemas/Incident" } }
+        agents: { type: array, items: { $ref: "#/components/schemas/Agent" } }
+        summary: { $ref: "#/components/schemas/Summary" }
+        coupons: { type: array, items: { $ref: "#/components/schemas/EventCoupon" } }
+        orders: { type: array, items: { $ref: "#/components/schemas/TicketOrder" } }
+        checkoutReady: { type: boolean }
+        emailReady: { type: boolean }
+    CommandResult:
+      type: object
+      required: [message, id]
+      properties:
+        message: { type: string }
+        id: { type: string }
+    CommandInput:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [create_event, update_event, delete_event, create_room, delete_room, create_session, update_session, delete_session, register, reserve_room, room_check_in, room_check_out, create_coupon, toggle_coupon, check_in, check_out, start_session, end_session, ask_question, answer_question, post_announcement, delete_announcement, set_role, trigger_incident, approve_remediation]
+        id: { type: string }
+        eventId: { type: string }
+        sessionId: { type: string }
+        roomId: { type: string }
+        title: { type: string, maxLength: 180 }
+        description: { type: string, maxLength: 5000 }
+        text: { type: string, maxLength: 5000 }
+        type: { type: string, enum: [meeting, class, workshop, conference, hybrid] }
+        status: { type: string, enum: [draft, upcoming, live, completed] }
+        location: { type: string, maxLength: 250 }
+        startsAt: { type: string }
+        endsAt: { type: string }
+        capacity: { type: integer, minimum: 1, maximum: 100000 }
+        isPrivate: { type: boolean }
+        sponsorsVisible: { type: boolean }
+        presenterId: { type: string }
+        name: { type: string, maxLength: 120 }
+        email: { type: string, format: email }
+        passCode: { type: string }
+        userId: { type: string }
+        role: { type: string, enum: [admin, presenter, participant] }
+        headline: { type: string, maxLength: 180 }
+        bannerPath: { type: string, maxLength: 250 }
+        accentColor: { type: string, pattern: "^#[0-9a-fA-F]{6}$" }
+        presenterName: { type: string, maxLength: 120 }
+        presenterBio: { type: string, maxLength: 2000 }
+        presenterPhotoPath: { type: string, maxLength: 250 }
+        ticketAmount: { type: integer, minimum: 0, maximum: 100000000 }
+        currency: { type: string, enum: [usd, eur, gbp, cad, mxn] }
+        code: { type: string, minLength: 3, maxLength: 40, pattern: "^[A-Za-z0-9_-]+$" }
+        percentOff: { type: integer, minimum: 1, maximum: 100 }
+        maxRedemptions: { type: integer, minimum: 1, maximum: 100000 }
+        expiresAt: { type: string }
+        active: { type: boolean }
+        roomPlans:
+          type: array
+          minItems: 1
+          maxItems: 50
+          items: { $ref: "#/components/schemas/RoomPlan" }
+    RoomPlan:
+      type: object
+      required: [name, capacity, sessions]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        capacity: { type: integer, minimum: 1, maximum: 100000 }
+        sessions:
+          type: array
+          minItems: 1
+          maxItems: 20
+          items: { $ref: "#/components/schemas/PlannedSession" }
+    PlannedSession:
+      type: object
+      required: [title, presenterName, startsAt, endsAt]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 180 }
+        presenterName: { type: string, minLength: 1, maxLength: 120 }
+        presenterId: { type: string }
+        startsAt: { type: string }
+        endsAt: { type: string }
+    RoomOperation:
+      type: object
+      required: [id, name, capacity, occupancy, uniqueVisitors, sessions]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        capacity: { type: integer }
+        occupancy: { type: integer }
+        uniqueVisitors: { type: integer }
+        sessions: { type: array, items: { $ref: "#/components/schemas/Session" } }
+    RoomVisitActivity:
+      type: object
+      required: [id, roomId, roomName, participantName, action, createdAt]
+      properties:
+        id: { type: string }
+        roomId: { type: string }
+        roomName: { type: string }
+        participantName: { type: string }
+        action: { type: string, enum: [room_check_in, room_check_out] }
+        createdAt: { type: string }
+    RoomOperations:
+      type: object
+      required: [eventId, updatedAt, rooms, recentActivity]
+      properties:
+        eventId: { type: string }
+        updatedAt: { type: string }
+        rooms: { type: array, items: { $ref: "#/components/schemas/RoomOperation" } }
+        recentActivity: { type: array, items: { $ref: "#/components/schemas/RoomVisitActivity" } }
+    OwnRoomPresence:
+      type: object
+      required: [roomId, roomName, enteredAt]
+      properties:
+        roomId: { type: string }
+        roomName: { type: string }
+        enteredAt: { type: string }
+    EntryEvent:
+      type: object
+      required: [id, title, description, status, location, startsAt, endsAt]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        status: { type: string }
+        location: { type: string }
+        startsAt: { type: string }
+        endsAt: { type: string }
+    RoomEntry:
+      type: object
+      required: [room, event, sessions, registered, presence]
+      properties:
+        room: { $ref: "#/components/schemas/Room" }
+        event: { $ref: "#/components/schemas/EntryEvent" }
+        sessions: { type: array, items: { $ref: "#/components/schemas/Session" } }
+        registered: { type: boolean }
+        presence:
+          anyOf:
+            - { $ref: "#/components/schemas/OwnRoomPresence" }
+            - { type: "null" }
+    CheckoutInput:
+      type: object
+      required: [eventId]
+      properties:
+        eventId: { type: string }
+        roomId: { type: string }
+        couponCode: { type: string, maxLength: 40 }
+    CheckoutResult:
+      type: object
+      required: [id, url]
+      properties:
+        id: { type: string }
+        url: { type: string }
+    EventCoupon:
+      type: object
+      required: [id, eventId, code, percentOff, redemptions, active]
+      properties:
+        id: { type: string }
+        eventId: { type: string }
+        code: { type: string }
+        percentOff: { type: number }
+        redemptions: { type: integer }
+        maxRedemptions: { type: [integer, "null"] }
+        expiresAt: { type: [string, "null"] }
+        active: { type: boolean }
+    TicketOrder:
+      type: object
+      required: [id, eventId, userId, status, expiresAt]
+      properties:
+        id: { type: string }
+        eventId: { type: string }
+        userId: { type: string }
+        roomId: { type: [string, "null"] }
+        status: { type: string }
+        expiresAt: { type: string }
+    UploadInput:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name: { type: string, maxLength: 180 }
+        size: { type: integer, minimum: 1, maximum: 2097152 }
+        contentType: { type: string, enum: [image/png] }
+    UploadResult:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL: { type: string }
+        objectPath: { type: string }
+    UploadCompleteInput:
+      type: object
+      required: [objectPath]
+      properties:
+        objectPath: { type: string, maxLength: 250 }
+    AssetResult:
+      type: object
+      required: [objectPath]
+      properties:
+        objectPath: { type: string }

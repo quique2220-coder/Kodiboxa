@@ -1,0 +1,23 @@
+import { pgTable, text, integer, boolean } from "drizzle-orm/pg-core";
+export const events = pgTable("events", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  type: text("type").notNull(),
+  status: text("status").notNull().default("upcoming"),
+  location: text("location").notNull().default(""),
+  startsAt: text("starts_at").notNull(),
+  endsAt: text("ends_at").notNull(),
+  capacity: integer("capacity").notNull(),
+  isPrivate: boolean("is_private").notNull().default(true),
+  sponsorsVisible: boolean("sponsors_visible").notNull().default(false),
+  example: boolean("example").notNull().default(false),
+  headline: text("headline").notNull().default(""),
+  bannerPath: text("banner_path").notNull().default(""),
+  accentColor: text("accent_color").notNull().default("#6d5ce7"),
+  presenterName: text("presenter_name").notNull().default(""),
+  presenterBio: text("presenter_bio").notNull().default(""),
+  presenterPhotoPath: text("presenter_photo_path").notNull().default(""),
+  stripeProductId: text("stripe_product_id").notNull().default(""),
+  stripePriceId: text("stripe_price_id").notNull().default(""),
+});

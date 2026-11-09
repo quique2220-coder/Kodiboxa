@@ -1,0 +1,60 @@
+.kode-launcher {
+  position: fixed;
+  right: 20px;
+  bottom: calc(82px + env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px 8px 8px;
+  border: 1px solid hsl(var(--primary) / .3);
+  border-radius: 22px;
+  background: hsl(var(--sidebar));
+  color: hsl(var(--sidebar-foreground));
+  box-shadow: 0 8px 32px hsl(var(--primary) / .22);
+  text-align: left;
+  transition: transform .2s, box-shadow .2s;
+}
+.kode-launcher:hover { transform: translateY(-4px); box-shadow: 0 12px 35px hsl(var(--primary) / .3); }
+.kode-launcher:focus-visible { outline: 3px solid hsl(var(--primary)); outline-offset: 4px; }
+.kode-launcher-avatar { display: grid; place-items: center; width: 56px; height: 56px; overflow: hidden; border-radius: 16px; background: #09142a; }
+.kode-launcher-avatar .kode-gills { width: 92%; height: auto; }
+.kode-chat-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(430px, calc(100vw - 24px));
+  height: min(690px, calc(100dvh - 32px));
+  max-height: calc(100dvh - 32px);
+}
+.kode-chat-hero { display: flex; align-items: center; gap: 18px; padding: 12px 24px; background: linear-gradient(110deg, hsl(var(--primary) / .12), hsl(var(--accent) / .08)); border-bottom: 1px solid hsl(var(--border)); }
+.kode-hero-art { display: grid; place-items: center; flex-shrink: 0; width: 104px; height: 104px; }
+.kode-hero-art .kode-gills { width: 100%; height: auto; }
+.kode-is-idle { animation: kode-float 4s ease-in-out infinite; }
+.kode-is-listening { transform: rotate(-6deg) scale(1.05); transition: transform .25s; }
+.kode-is-reading { animation: kode-read .6s ease-in-out infinite alternate; }
+@keyframes kode-float { 50% { transform: translateY(-4px); } }
+@keyframes kode-read { to { transform: rotate(5deg) translateY(-2px); } }
+@media (min-width: 1024px) { .kode-launcher { bottom: 24px; } }
+/* Keep the mobile companion in a reserved header slot, not over forms. */
+@media (max-width: 1023px) {
+  .kode-launcher {
+    top: 8px;
+    right: 60px;
+    bottom: auto;
+    z-index: 45;
+    width: 40px;
+    height: 40px;
+    justify-content: center;
+    padding: 4px;
+    border-radius: 12px;
+    box-shadow: none;
+  }
+  .kode-launcher-avatar { width: 30px; height: 30px; border-radius: 9px; }
+  .kode-launcher > span:not(.kode-launcher-avatar),
+  .kode-launcher > svg { display: none; }
+  .kode-launcher:hover { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kode-chat-hero .kode-hero-art { animation: none; transition: none; }
+  .kode-launcher { transition: none; }
+}

@@ -1,0 +1,40 @@
+.kode-gills { display: block; overflow: visible; }
+.kode-gill { transform-box: view-box; animation: kode-gill 2.2s ease-in-out infinite; }
+.kode-gill[data-side="l"] { --gill-angle: 20deg; }
+.kode-gill[data-side="r"] { --gill-angle: -20deg; }
+.kode-gills-focused .kode-gill { animation-duration: 1.6s; }
+.kode-gills-focused .kode-gill[data-side="l"] { --gill-angle: 24deg; }
+.kode-gills-focused .kode-gill[data-side="r"] { --gill-angle: -24deg; }
+.kode-gills-busy .kode-gill { animation-duration: 1.2s; }
+.kode-gills-busy .kode-gill[data-side="l"] { --gill-angle: 28deg; }
+.kode-gills-busy .kode-gill[data-side="r"] { --gill-angle: -28deg; }
+@keyframes kode-gill {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(var(--gill-angle)); }
+}
+.kode-swim-lane { --swimmer-width: 128px; position: relative; height: 150px; margin-top: 12px; }
+.kode-swim-traveler { position: absolute; top: 8px; left: 0; width: var(--swimmer-width); animation: kode-traverse 30s ease-in-out infinite; }
+.kode-swim-status { position: absolute !important; bottom: 0; left: 50%; transform: translateX(-50%); }
+@keyframes kode-traverse {
+  0%, 100% { left: 0; }
+  50% { left: calc(100% - var(--swimmer-width)); }
+}
+.kode-swim { animation: kode-swim 2.5s ease-in-out infinite; transform-origin: 50% 60%; will-change: transform; }
+@keyframes kode-swim {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25% { transform: translateY(-4%) rotate(-3deg); }
+  50% { transform: translateY(-2%) rotate(0deg); }
+  75% { transform: translateY(-6%) rotate(3deg); }
+}
+.kode-motion-label { position: relative; font: 9px/1.4 monospace; letter-spacing: .1em; text-transform: uppercase; color: #a5f3fc; border: 1px solid #67e8f940; border-radius: 999px; padding: 2px 7px; background: #07172d; white-space: nowrap; }
+.kode-motion-reduced { display: none; }
+@media (max-width: 767px) {
+  .kode-swim-lane { --swimmer-width: 88px; height: 112px; }
+  .kode-swim-traveler { animation-duration: 20s; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .kode-gill, .kode-swim, .kode-swim-traveler { animation: none; }
+  .kode-swim-traveler { left: calc(50% - var(--swimmer-width) / 2); }
+  .kode-motion-running { display: none; }
+  .kode-motion-reduced { display: inline; }
+}
