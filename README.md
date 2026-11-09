@@ -75,3 +75,9 @@ or change its organization settings.
 
 Only an actual Gitar response confirms that the integration is working.
 See the [official setup guide](https://docs.gitar.ai/quickstart).
+
+## Technical monitoring
+
+The server includes privacy-restricted OpenTelemetry exporters for Dash0.
+See [monitoring setup, verification and alerting limitations](docs/observability.md).
+An ingestion token alone does not create external dashboards or notifications.

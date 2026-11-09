@@ -1,4 +1,6 @@
-export const integrations = [
+import { telemetryIntegration } from "./telemetry";
+
+const integrations = [
   { id: "postgres", name: "PostgreSQL", status: "connected", description: "Persistent event records, registrations, attendance, and audit history." },
   { id: "clerk", name: "Clerk authentication", status: "connected", description: "Managed sign-in. Application roles enforced by the server." },
   { id: "livekit", name: "LiveKit", status: "unavailable", description: "Requires a LiveKit server, API credentials and a tested media session. Preferred adapter for fine-grained permissions." },
@@ -12,6 +14,10 @@ export const integrations = [
   { id: "elasticsearch", name: "Elasticsearch", status: "unavailable", description: "No external log search connected." },
   { id: "sre-demo", name: "Isolated latency demonstration", status: "demo", description: "Real timer measurements with rule-based analysis and administrator approval. Not LLM inference or production infrastructure." },
 ];
+export function platformIntegrations(admin: boolean) {
+  // Detailed monitoring state is operations-only, not participant/public data.
+  return integrations.filter(item => item.id !== "dash0").concat(admin ? [telemetryIntegration()] : []);
+}
 export const agents = [
   { id: "sre", name: "AI SRE Agent", status: "Isolated demo only · inference unavailable", description: "Measure a controlled delay, inspect evidence, request approval, reset the safe demo delay and verify recovery. Rule-based demonstration, not an AI model." },
   { id: "operations", name: "Event Operations Agent", status: "Planned · Ollama not connected", description: "Activity analysis, attendance summaries and announcement drafts." },

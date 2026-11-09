@@ -5,6 +5,7 @@ import type Stripe from "stripe";
 import { fail } from "./auth";
 import { checkoutReady, getUncachableStripeClient, getStripeSync } from "./stripeClient";
 import { StartEventCheckoutBody } from "@workspace/api-zod";
+import { withTelemetryOperation } from "./telemetry";
 
 type CheckoutInput = ReturnType<typeof StartEventCheckoutBody.parse>;
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -101,7 +102,10 @@ export async function toggleEventCoupon(id: string, active: boolean) {
   clearCouponCache();
 }
 
-export async function startCheckout(user: Account, input: CheckoutInput) {
+export function startCheckout(user: Account, input: CheckoutInput) {
+  return withTelemetryOperation("payment.checkout", () => startCheckoutInternal(user, input));
+}
+async function startCheckoutInternal(user: Account, input: CheckoutInput) {
   if (!checkoutReady) fail(503, "Stripe checkout is unavailable");
   const stripe = await getUncachableStripeClient();
   let promoId: string | undefined;
@@ -111,7 +115,7 @@ export async function startCheckout(user: Account, input: CheckoutInput) {
     if (!promo) fail(400, "This coupon is invalid, expired or belongs to another event");
     promoId = promo.id;
   }
-  const order = await db.transaction(async tx => {
+  const order = await withTelemetryOperation("database.transaction", () => db.transaction(async tx => {
     await tx.execute(ticketLock);
     const [event] = await tx.select().from(events).where(eq(events.id, input.eventId));
     if (!event) fail(404, "Event not found");
@@ -129,7 +133,7 @@ export async function startCheckout(user: Account, input: CheckoutInput) {
       expiresAt: new Date(Date.now() + 31 * 60_000).toISOString(),
     }).returning();
     return { order: created, event };
-  });
+  }));
   const { order: hold, event } = order;
   if (hold.checkoutSessionId) {
     const session = await stripe.checkout.sessions.retrieve(hold.checkoutSessionId);
@@ -160,17 +164,20 @@ function createStripeCheckout(stripe: Stripe, hold: typeof ticketOrders.$inferSe
   const domain = process.env.REPLIT_DOMAINS?.split(",")[0];
   if (!domain) fail(503, "Application URL is unavailable");
   const base = `https://${domain}/events/${encodeURIComponent(hold.eventId)}`;
-  return stripe.checkout.sessions.create({
+  return withTelemetryOperation("stripe.checkout", () => stripe.checkout.sessions.create({
     mode: "payment", payment_method_types: ["card"], line_items: [{ price: hold.stripePriceId, quantity: 1 }],
     customer_email: user.email, client_reference_id: hold.id,
     metadata: { orderId: hold.id, eventId: hold.eventId, userId: user.id, app: "kodiboxa" },
     discounts: hold.promotionCodeId ? [{ promotion_code: hold.promotionCodeId }] : undefined,
     expires_at: Math.floor(new Date(hold.expiresAt).getTime() / 1000),
     success_url: `${base}?checkout=success`, cancel_url: `${base}?checkout=cancelled`,
-  }, { idempotencyKey: `event-checkout-${hold.id}` });
+  }, { idempotencyKey: `event-checkout-${hold.id}` }));
 }
 
 async function settleOrder(order: typeof ticketOrders.$inferSelect, session: Stripe.Checkout.Session) {
+  return withTelemetryOperation("payment.settlement", () => settleOrderInternal(order, session));
+}
+async function settleOrderInternal(order: typeof ticketOrders.$inferSelect, session: Stripe.Checkout.Session) {
   if (session.metadata?.orderId !== order.id || session.metadata?.eventId !== order.eventId || session.metadata?.userId !== order.userId) fail(409, "Payment metadata does not match this reservation");
   await db.transaction(async tx => {
     await tx.execute(ticketLock);

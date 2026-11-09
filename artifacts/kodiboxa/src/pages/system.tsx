@@ -37,7 +37,18 @@ export function Platform() {
                 {ws.integrations.map((i) => (
                   <li key={i.id} className="flex items-start gap-4 px-5 py-4" data-testid={`row-integration-${i.id}`}>
                     <span className={cn('mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg', i.status === 'connected' ? 'bg-ok/12 text-ok' : 'bg-muted text-muted-foreground')}><Plug className="h-4 w-4" /></span>
-                    <div className="min-w-0 flex-1"><div className="font-semibold">{i.name}</div><p className="text-sm text-muted-foreground">{i.description}</p></div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-semibold">{i.name}</div>
+                      <p className="text-sm text-muted-foreground">{i.description}</p>
+                      {i.id === 'dash0' && access(ws).isAdmin && (
+                        <div className="mt-2 space-y-1 text-xs text-muted-foreground" data-testid="dash0-monitoring-details">
+                          <p>Backend request counts, response times, registration/payment operation outcomes and technical errors. Request traces are sampled at 10%.</p>
+                          <p>Optional live-session diagnostics report connection/device failure categories and caption startup timings only. Audio, video, caption text and participant details are not exported.</p>
+                          <p>Dashboard: KODIBOXA — Development operations. Production monitoring requires separate verification. Agent0 investigations do not authorize automatic changes.</p>
+                          <a href="https://app.dash0.com" target="_blank" rel="noopener noreferrer" className="inline-block font-semibold text-primary underline-offset-4 hover:underline" data-testid="link-dash0-dashboard">Open Dash0 monitoring</a>
+                        </div>
+                      )}
+                    </div>
                     <Pill status={i.status} />
                   </li>
                 ))}

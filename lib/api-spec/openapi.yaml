@@ -350,6 +350,29 @@ paths:
       responses:
         "204":
           description: Caption lease revoked
+  /sessions/{id}/diagnostics:
+    post:
+      operationId: createSessionDiagnostic
+      tags: [Observability]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SessionDiagnosticInput" }
+      responses:
+        "204": { description: Technical diagnostic accepted without storing session or participant identifiers }
+        "400": { description: Invalid or non-consented technical event }
+        "401": { description: Sign-in required }
+        "403": { description: Confirmed session access required }
+        "409": { description: Session is not live }
+        "413": { description: Diagnostic payload too large }
+        "429": { description: Diagnostic rate limit reached }
+        "503": { description: Diagnostics or streaming setup unavailable }
   /livekit/status:
     get:
       operationId: getLiveKitStatus
@@ -506,6 +529,19 @@ paths:
           description: Public validated PNG
 components:
   schemas:
+    SessionDiagnosticInput:
+      type: object
+      additionalProperties: false
+      required: [consent, event, source]
+      properties:
+        consent: { type: boolean, enum: [true] }
+        event:
+          type: string
+          enum: [connection_started, connection_ready, connection_failed, connection_timeout, connection_dropped, connection_reconnecting, device_access_failed, captions_starting, captions_ready, captions_failed, caption_first_result, caption_translation_failed]
+        source:
+          type: string
+          enum: [connection, camera, microphone, screen_share, captions, unknown]
+        durationMs: { type: integer, minimum: 0, maximum: 600000 }
     SessionCheckInInput:
       type: object
       required: [kind, prompt, options]
