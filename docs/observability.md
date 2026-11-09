@@ -24,12 +24,16 @@ limited to 20 per process per minute. Startup probes are explicitly identified a
 
 ## Server configuration
 
-Store these values in the hosting environment's Secrets manager:
+Configure these values on the server:
 
 - `DASH0_AUTH_TOKEN`: an ingestion-authorized Dash0 token, without shell commands.
-- `DASH0_OTLP_HTTP_ENDPOINT`: the organization's HTTPS OTLP/HTTP ingress endpoint.
+  Store this in the hosting environment's Secrets manager.
+- `OTEL_EXPORTER_OTLP_ENDPOINT`: the organization's HTTPS OTLP/HTTP ingress endpoint.
+  This URL is not a credential and can be stored as an environment variable.
   Copy it from Dash0 **Settings → Endpoints → OTLP/HTTP**. Do not use the panel URL,
   API endpoint, gRPC address, an example placeholder or an entire setup snippet.
+  The older `DASH0_OTLP_HTTP_ENDPOINT` setting remains supported when the standard
+  variable is absent; the standard variable takes precedence.
 
 The endpoint must use the `ingress.*.dash0.com` hostname and HTTPS port 443.
 A root endpoint or a `/v1/traces`, `/v1/metrics` or `/v1/logs` suffix is accepted;
