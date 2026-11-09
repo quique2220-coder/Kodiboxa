@@ -150,7 +150,10 @@ export function initializeTelemetry() {
   if (started) return;
   started = true;
   try {
-    runtime = createTelemetryRuntime(dash0Configuration(process.env.DASH0_OTLP_HTTP_ENDPOINT, process.env.DASH0_AUTH_TOKEN));
+    runtime = createTelemetryRuntime(dash0Configuration(
+      process.env.OTEL_EXPORTER_OTLP_ENDPOINT ?? process.env.DASH0_OTLP_HTTP_ENDPOINT,
+      process.env.DASH0_AUTH_TOKEN,
+    ));
     runtime.probe();
     void runtime.flush().then(() => logger.info({
       signals: Object.fromEntries(Object.entries(delivery).map(([signal, state]) => [signal, state.accepted > 0])),
