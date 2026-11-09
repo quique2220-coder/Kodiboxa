@@ -8,6 +8,7 @@ import { assertSeat, updateEventPrice, createEventCoupon, toggleEventCoupon } fr
 import { validateRoomPlans, insertRoomPlans } from "./room-planning";
 import { changeRoomAttendance, leaveRoom } from "./room-attendance";
 import { getLiveKitStatus } from "./livekit";
+import { withTelemetryOperation, type ObservedOperation } from "./telemetry";
 type Input = ReturnType<typeof ExecuteCommandBody.parse>;
 type User = typeof users.$inferSelect;
 const stamp = () => new Date().toISOString();
@@ -28,7 +29,7 @@ export async function execute(user: User, c: Input) {
     const liveKit = getLiveKitStatus();
     if (!liveKit.configured) fail(503, liveKit.setupMessage);
   }
-  return db.transaction(async tx => {
+  const runTransaction = () => withTelemetryOperation("database.transaction", () => db.transaction(async tx => {
     // Serialize writes which depend on counts, schedules or approval state.
     await tx.execute(sql`select pg_advisory_xact_lock(47018031)`);
     let id = c.id ?? randomUUID();
@@ -302,5 +303,11 @@ export async function execute(user: User, c: Input) {
     }
     await tx.insert(auditLogs).values({ id: randomUUID(), actor: user.name, action: c.action, detail, createdAt: stamp() });
     return { id, message: detail || "Changes saved" };
-  });
+  }));
+  const observed: Partial<Record<Input["action"], ObservedOperation>> = {
+    register: "registration.create", reserve_room: "registration.reserve_room",
+    room_check_in: "attendance.check_in", room_check_out: "attendance.check_out",
+  };
+  const name = observed[c.action];
+  return name ? withTelemetryOperation(name, runTransaction) : runTransaction();
 }

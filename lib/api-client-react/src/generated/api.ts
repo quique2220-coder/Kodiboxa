@@ -51,6 +51,10 @@ import type {
   RoomOperations,
   SessionCaption,
   SessionCaptions,
+  SessionCheckInAnswer,
+  SessionCheckInInput,
+  SessionDiagnosticInput,
+  SessionEngagement,
   UploadCompleteInput,
   UploadInput,
   UploadResult,
@@ -1490,6 +1494,339 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getSaveCommunicationPreferencesMutationOptions(options), queryClient);
     }
 
+export const getGetSessionEngagementUrl = (id: string,) => {
+
+
+
+
+  return `/api/sessions/${id}/engagement`
+}
+
+export const getSessionEngagement = async (id: string, options?: Parameters<typeof customFetch>[1]): Promise<SessionEngagement> => {
+
+  return customFetch<SessionEngagement>(getGetSessionEngagementUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSessionEngagementQueryKey = (id: string,) => {
+    return [
+    `/api/sessions/${id}/engagement`
+    ] as const;
+    }
+
+
+export const getGetSessionEngagementQueryOptions = <TData = Awaited<ReturnType<typeof getSessionEngagement>>, TError = ErrorType<void>>(id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSessionEngagement>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSessionEngagementQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSessionEngagement>>> = ({ signal }) => getSessionEngagement(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSessionEngagement>>, TError, TData> & { queryKey: DataTag<QueryKey, TData, TError> }
+}
+
+export type GetSessionEngagementQueryResult = NonNullable<Awaited<ReturnType<typeof getSessionEngagement>>>
+export type GetSessionEngagementQueryError = ErrorType<void>
+
+
+export function useGetSessionEngagement<TData = Awaited<ReturnType<typeof getSessionEngagement>>, TError = ErrorType<void>>(
+ id: string, options: { query:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSessionEngagement>>, TError, TData>> & Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSessionEngagement>>,
+          TError,
+          Awaited<ReturnType<typeof getSessionEngagement>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  DefinedUseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSessionEngagement<TData = Awaited<ReturnType<typeof getSessionEngagement>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSessionEngagement>>, TError, TData>> & Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof getSessionEngagement>>,
+          TError,
+          Awaited<ReturnType<typeof getSessionEngagement>>
+        > , 'initialData'
+      >, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+export function useGetSessionEngagement<TData = Awaited<ReturnType<typeof getSessionEngagement>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSessionEngagement>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+  ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> }
+
+export function useGetSessionEngagement<TData = Awaited<ReturnType<typeof getSessionEngagement>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:Partial<UseQueryOptions<Awaited<ReturnType<typeof getSessionEngagement>>, TError, TData>>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient
+ ):  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> } {
+
+  const queryOptions = getGetSessionEngagementQueryOptions(id,options)
+
+  const query = useQuery(queryOptions, queryClient) as  UseQueryResult<TData, TError> & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getOpenSessionCheckInUrl = (id: string,) => {
+
+
+
+
+  return `/api/sessions/${id}/engagement`
+}
+
+export const openSessionCheckIn = async (id: string,
+    sessionCheckInInput: SessionCheckInInput, options?: Parameters<typeof customFetch>[1]): Promise<SessionEngagement> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SessionEngagement>(getOpenSessionCheckInUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(sessionCheckInInput)
+  }
+);}
+
+
+
+
+
+export const getOpenSessionCheckInMutationKey = () => ['openSessionCheckIn'] as const;
+
+export const getOpenSessionCheckInMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openSessionCheckIn>>, TError,OpenSessionCheckInMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof openSessionCheckIn>>, TError,OpenSessionCheckInMutationVariables, TContext> => {
+
+const mutationKey = getOpenSessionCheckInMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof openSessionCheckIn>>, OpenSessionCheckInMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  openSessionCheckIn(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type OpenSessionCheckInMutationResult = NonNullable<Awaited<ReturnType<typeof openSessionCheckIn>>>
+    export type OpenSessionCheckInMutationBody = BodyType<SessionCheckInInput>
+    export type OpenSessionCheckInMutationError = ErrorType<void>
+    export type OpenSessionCheckInMutationVariables = {id: string;data: BodyType<SessionCheckInInput>}
+
+    export const useOpenSessionCheckIn = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openSessionCheckIn>>, TError,OpenSessionCheckInMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof openSessionCheckIn>>,
+        TError,
+        OpenSessionCheckInMutationVariables,
+        TContext
+      > => {
+      return useMutation(getOpenSessionCheckInMutationOptions(options), queryClient);
+    }
+
+export const getAnswerSessionCheckInUrl = (id: string,
+    checkInId: string,) => {
+
+
+
+
+  return `/api/sessions/${id}/engagement/${checkInId}/response`
+}
+
+export const answerSessionCheckIn = async (id: string,
+    checkInId: string,
+    sessionCheckInAnswer: SessionCheckInAnswer, options?: Parameters<typeof customFetch>[1]): Promise<SessionEngagement> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<SessionEngagement>(getAnswerSessionCheckInUrl(id,checkInId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(sessionCheckInAnswer)
+  }
+);}
+
+
+
+
+
+export const getAnswerSessionCheckInMutationKey = () => ['answerSessionCheckIn'] as const;
+
+export const getAnswerSessionCheckInMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof answerSessionCheckIn>>, TError,AnswerSessionCheckInMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof answerSessionCheckIn>>, TError,AnswerSessionCheckInMutationVariables, TContext> => {
+
+const mutationKey = getAnswerSessionCheckInMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof answerSessionCheckIn>>, AnswerSessionCheckInMutationVariables> = (props) => {
+          const {id,checkInId,data} = props ?? {};
+
+          return  answerSessionCheckIn(id,checkInId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AnswerSessionCheckInMutationResult = NonNullable<Awaited<ReturnType<typeof answerSessionCheckIn>>>
+    export type AnswerSessionCheckInMutationBody = BodyType<SessionCheckInAnswer>
+    export type AnswerSessionCheckInMutationError = ErrorType<void>
+    export type AnswerSessionCheckInMutationVariables = {id: string;checkInId: string;data: BodyType<SessionCheckInAnswer>}
+
+    export const useAnswerSessionCheckIn = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof answerSessionCheckIn>>, TError,AnswerSessionCheckInMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof answerSessionCheckIn>>,
+        TError,
+        AnswerSessionCheckInMutationVariables,
+        TContext
+      > => {
+      return useMutation(getAnswerSessionCheckInMutationOptions(options), queryClient);
+    }
+
+export const getCloseSessionCheckInUrl = (id: string,
+    checkInId: string,) => {
+
+
+
+
+  return `/api/sessions/${id}/engagement/${checkInId}/close`
+}
+
+export const closeSessionCheckIn = async (id: string,
+    checkInId: string, options?: Parameters<typeof customFetch>[1]): Promise<SessionEngagement> => {
+
+  return customFetch<SessionEngagement>(getCloseSessionCheckInUrl(id,checkInId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCloseSessionCheckInMutationKey = () => ['closeSessionCheckIn'] as const;
+
+export const getCloseSessionCheckInMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof closeSessionCheckIn>>, TError,CloseSessionCheckInMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof closeSessionCheckIn>>, TError,CloseSessionCheckInMutationVariables, TContext> => {
+
+const mutationKey = getCloseSessionCheckInMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof closeSessionCheckIn>>, CloseSessionCheckInMutationVariables> = (props) => {
+          const {id,checkInId} = props ?? {};
+
+          return  closeSessionCheckIn(id,checkInId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CloseSessionCheckInMutationResult = NonNullable<Awaited<ReturnType<typeof closeSessionCheckIn>>>
+
+    export type CloseSessionCheckInMutationError = ErrorType<void>
+    export type CloseSessionCheckInMutationVariables = {id: string;checkInId: string}
+
+    export const useCloseSessionCheckIn = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof closeSessionCheckIn>>, TError,CloseSessionCheckInMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof closeSessionCheckIn>>,
+        TError,
+        CloseSessionCheckInMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCloseSessionCheckInMutationOptions(options), queryClient);
+    }
+
 export const getGetSessionCaptionsUrl = (id: string,) => {
 
 
@@ -1915,6 +2252,89 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getStopSessionCaptionsMutationOptions(options), queryClient);
+    }
+
+export const getCreateSessionDiagnosticUrl = (id: string,) => {
+
+
+
+
+  return `/api/sessions/${id}/diagnostics`
+}
+
+export const createSessionDiagnostic = async (id: string,
+    sessionDiagnosticInput: SessionDiagnosticInput, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+return customFetch<void>(getCreateSessionDiagnosticUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(sessionDiagnosticInput)
+  }
+);}
+
+
+
+
+
+export const getCreateSessionDiagnosticMutationKey = () => ['createSessionDiagnostic'] as const;
+
+export const getCreateSessionDiagnosticMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSessionDiagnostic>>, TError,CreateSessionDiagnosticMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSessionDiagnostic>>, TError,CreateSessionDiagnosticMutationVariables, TContext> => {
+
+const mutationKey = getCreateSessionDiagnosticMutationKey();
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSessionDiagnostic>>, CreateSessionDiagnosticMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createSessionDiagnostic(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSessionDiagnosticMutationResult = NonNullable<Awaited<ReturnType<typeof createSessionDiagnostic>>>
+    export type CreateSessionDiagnosticMutationBody = BodyType<SessionDiagnosticInput>
+    export type CreateSessionDiagnosticMutationError = ErrorType<void>
+    export type CreateSessionDiagnosticMutationVariables = {id: string;data: BodyType<SessionDiagnosticInput>}
+
+    export const useCreateSessionDiagnostic = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSessionDiagnostic>>, TError,CreateSessionDiagnosticMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ , queryClient?: QueryClient): UseMutationResult<
+        Awaited<ReturnType<typeof createSessionDiagnostic>>,
+        TError,
+        CreateSessionDiagnosticMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateSessionDiagnosticMutationOptions(options), queryClient);
     }
 
 export const getGetLiveKitStatusUrl = () => {

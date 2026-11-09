@@ -1,6 +1,7 @@
 import { AccessToken, RoomServiceClient, TrackSource } from "livekit-server-sdk";
 import { and, eq, inArray } from "drizzle-orm";
 import { db, registrations, sessions, users } from "@workspace/db";
+import { withTelemetryOperation } from "./telemetry";
 
 type LiveKitEnvironment = {
   LIVEKIT_URL?: string;
@@ -117,6 +118,9 @@ export async function authorizeLiveKitSession(sessionId: string, user: typeof us
 }
 
 export async function createSessionToken(sessionId: string, user: typeof users.$inferSelect) {
+  return withTelemetryOperation("video.issue_token", () => issueSessionToken(sessionId, user));
+}
+async function issueSessionToken(sessionId: string, user: typeof users.$inferSelect) {
   const { session, config, role } = await authorizeLiveKitSession(sessionId, user);
   return signLiveKitSessionToken(config, session.id, user.id, user.name, role);
 }

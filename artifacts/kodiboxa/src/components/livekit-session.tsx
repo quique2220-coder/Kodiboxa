@@ -17,6 +17,7 @@ import {
 import '@livekit/components-styles';
 import { LiveCaptionsPanel } from '@/components/live-captions-panel';
 import { LiveKitStage } from '@/components/livekit-stage';
+import { DiagnosticConsent, SessionConnectionDiagnostics, SessionDiagnosticsProvider, useDiagnosticReporter, useSessionDiagnostic } from '@/components/session-diagnostics';
 
 export const TRANSCRIPTION_TOPIC = 'kodiboxa.transcription.v1';
 export const TRANSLATION_TOPIC = 'kodiboxa.translation.v1';
@@ -70,6 +71,7 @@ export function LiveKitIntentJanitor({ sessions }: { sessions: Pick<Session, 'id
 }
 
 function Controls({ role, onDeviceError }: { role: Mode; onDeviceError: (message: string) => void }) {
+  const report = useSessionDiagnostic();
   if (role === 'admin') {
     return (
       <p className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-white/70" data-testid="text-livekit-receive-only">
@@ -83,8 +85,10 @@ function Controls({ role, onDeviceError }: { role: Mode; onDeviceError: (message
         variation="verbose"
         saveUserChoices={false}
         controls={{ camera: true, microphone: true, screenShare: role === 'presenter', chat: false, leave: false, settings: false }}
-        onDeviceError={({ source }) =>
-          onDeviceError(`${source === Track.Source.ScreenShare ? 'Screen share' : source === Track.Source.Microphone ? 'Microphone' : 'Camera'} access is blocked or unavailable. Allow device permissions in your browser, close other apps using the device, or open this page in a new tab.`)}
+        onDeviceError={({ source }) => {
+          report('device_access_failed', source === Track.Source.ScreenShare ? 'screen_share' : source === Track.Source.Microphone ? 'microphone' : 'camera');
+          onDeviceError(`${source === Track.Source.ScreenShare ? 'Screen share' : source === Track.Source.Microphone ? 'Microphone' : 'Camera'} access is blocked or unavailable. Allow device permissions in your browser, close other apps using the device, or open this page in a new tab.`);
+        }}
       />
     </div>
   );
@@ -162,6 +166,12 @@ export function LiveKitSession({ session, mode, authorized = true, adminTools = 
   const leaving = useRef(false);
   const mounted = useRef(false);
   const attempt = useRef(0);
+  const diagnostics = useDiagnosticReporter(session.id);
+  const { report } = diagnostics;
+  const joinStartedAt = useRef<number | null>(null);
+  useEffect(() => {
+    diagnostics.setEnabled(false);
+  }, [userId, session.id, diagnostics.setEnabled]);
 
   useEffect(() => {
     mounted.current = true;
@@ -189,6 +199,8 @@ export function LiveKitSession({ session, mode, authorized = true, adminTools = 
       setError(status.data?.setupMessage || 'Live streaming is not configured yet.');
       return;
     }
+    joinStartedAt.current = performance.now();
+    report('connection_started', 'connection');
     setJoining(true);
     const requestAttempt = ++attempt.current;
     try {
@@ -200,11 +212,12 @@ export function LiveKitSession({ session, mode, authorized = true, adminTools = 
       writeIntent(userId, session.id, true);
     } catch (cause) {
       if (!mounted.current || requestAttempt !== attempt.current) return;
+      report('connection_failed', 'connection');
       setError(cause instanceof Error ? cause.message : 'The live session could not be joined. Please try again.');
     } finally {
       if (mounted.current && requestAttempt === attempt.current) setJoining(false);
     }
-  }, [authorized, configured, status.data?.setupMessage, session.id, userId, isLoaded]);
+  }, [authorized, configured, status.data?.setupMessage, session.id, userId, isLoaded, report]);
 
   const exit = () => {
     attempt.current += 1;
@@ -254,16 +267,26 @@ export function LiveKitSession({ session, mode, authorized = true, adminTools = 
     void enter();
   }, [isLoaded, userId, isLive, authorized, status.isLoading, configured, session.id, enter]);
 
-  const onConnected = useCallback(() => { setConnected(true); setDropped(false); setError(''); }, []);
+  const onConnected = useCallback(() => {
+    report('connection_ready', 'connection', joinStartedAt.current === null ? undefined : performance.now() - joinStartedAt.current);
+    setConnected(true); setDropped(false); setError('');
+  }, [report]);
   const onDisconnected = useCallback(() => {
     setConnected(false);
     if (leaving.current) return;
+    report('connection_dropped', 'connection');
     setCredentials(null);
     setDropped(true);
     setError('The live connection ended or could not be established.');
-  }, []);
-  const onRoomError = useCallback(() => setError('The live session encountered an error. Check your connection and device permissions.'), []);
-  const onMediaFailure = useCallback(() => setError('Camera or microphone access is blocked or unavailable. Allow device permissions in your browser, close other apps using the camera, or open this page in a new tab.'), []);
+  }, [report]);
+  const onRoomError = useCallback(() => {
+    report('connection_failed', 'connection');
+    setError('The live session encountered an error. Check your connection and device permissions.');
+  }, [report]);
+  const onMediaFailure = useCallback(() => {
+    report('device_access_failed', 'unknown');
+    setError('Camera or microphone access is blocked or unavailable. Allow device permissions in your browser, close other apps using the camera, or open this page in a new tab.');
+  }, [report]);
   const roomOptions = useMemo(() => ROOM_OPTIONS, []);
 
   useEffect(() => {
@@ -273,13 +296,15 @@ export function LiveKitSession({ session, mode, authorized = true, adminTools = 
       setCredentials(null);
       setDropped(true);
       setError('Connection timed out. Select Reconnect to try again.');
+      report('connection_timeout', 'connection');
     }, 30_000);
     return () => window.clearTimeout(timeout);
-  }, [credentials, connected]);
+  }, [credentials, connected, report]);
 
   if (credentials) {
     const role = credentials.role;
     return (
+      <SessionDiagnosticsProvider report={report}>
       <section className="overflow-hidden rounded-2xl border border-[hsl(var(--sidebar-border))] bg-[hsl(var(--sidebar))] text-white" data-testid={`panel-livekit-session-${session.id}`}>
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-4 py-3 sm:px-5">
           <div className="min-w-0">
@@ -297,6 +322,7 @@ export function LiveKitSession({ session, mode, authorized = true, adminTools = 
           </button>
         </header>
         <div className="space-y-3 p-3 sm:p-5">
+          <DiagnosticConsent state={diagnostics} dark />
           {error && <p role="alert" className="rounded-lg border border-rose-300/20 bg-rose-400/10 px-3 py-2 text-xs text-rose-100" data-testid="error-livekit-connection">{error}</p>}
           {role !== 'admin' && (
             <p className="text-xs leading-relaxed text-white/70" data-testid="text-livekit-camera-help">
@@ -317,16 +343,19 @@ export function LiveKitSession({ session, mode, authorized = true, adminTools = 
             onError={onRoomError}
             onMediaDeviceFailure={onMediaFailure}
           >
+            <SessionConnectionDiagnostics />
             <RoomBody role={role} sessionId={session.id} presenterId={session.presenterId} adminTools={adminTools} onDeviceError={setError} />
           </LiveKitRoom>
         </div>
       </section>
+      </SessionDiagnosticsProvider>
     );
   }
 
   const busy = joining || tokenRequest.isPending;
   return (
     <div className="space-y-2" data-testid={`livekit-entry-${session.id}`}>
+      <DiagnosticConsent state={diagnostics} />
       <button
         type="button"
         onClick={() => void enter()}

@@ -312,6 +312,153 @@ export const SaveCommunicationPreferencesResponse = zod.object({
 })
 
 
+export const GetSessionEngagementParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetSessionEngagementResponse = zod.object({
+  "canManage": zod.boolean(),
+  "canRespond": zod.boolean(),
+  "sessionLive": zod.boolean(),
+  "prompts": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['checkin', 'poll']),
+  "prompt": zod.string(),
+  "options": zod.array(zod.string()),
+  "createdAt": zod.string(),
+  "closedAt": zod.string().nullable(),
+  "active": zod.boolean(),
+  "myChoice": zod.number().int().nullable(),
+  "results": zod.object({
+  "totalResponses": zod.number().int(),
+  "counts": zod.array(zod.number().int())
+}).nullable().describe('Only supplied to admins and the assigned presenter'),
+  "responses": zod.array(zod.object({
+  "name": zod.string(),
+  "choice": zod.number().int(),
+  "updatedAt": zod.string()
+})).describe('Empty for attendees; organizers see only people who voluntarily answered, never nonresponder scores')
+}))
+})
+
+
+export const OpenSessionCheckInParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const openSessionCheckInBodyPromptMax = 240;
+
+export const openSessionCheckInBodyOptionsItemMax = 80;
+
+export const openSessionCheckInBodyOptionsMin = 2;
+export const openSessionCheckInBodyOptionsMax = 4;
+
+
+
+export const OpenSessionCheckInBody = zod.object({
+  "kind": zod.enum(['checkin', 'poll']),
+  "prompt": zod.string().min(1).max(openSessionCheckInBodyPromptMax),
+  "options": zod.array(zod.string().min(1).max(openSessionCheckInBodyOptionsItemMax)).min(openSessionCheckInBodyOptionsMin).max(openSessionCheckInBodyOptionsMax)
+})
+
+export const OpenSessionCheckInResponse = zod.object({
+  "canManage": zod.boolean(),
+  "canRespond": zod.boolean(),
+  "sessionLive": zod.boolean(),
+  "prompts": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['checkin', 'poll']),
+  "prompt": zod.string(),
+  "options": zod.array(zod.string()),
+  "createdAt": zod.string(),
+  "closedAt": zod.string().nullable(),
+  "active": zod.boolean(),
+  "myChoice": zod.number().int().nullable(),
+  "results": zod.object({
+  "totalResponses": zod.number().int(),
+  "counts": zod.array(zod.number().int())
+}).nullable().describe('Only supplied to admins and the assigned presenter'),
+  "responses": zod.array(zod.object({
+  "name": zod.string(),
+  "choice": zod.number().int(),
+  "updatedAt": zod.string()
+})).describe('Empty for attendees; organizers see only people who voluntarily answered, never nonresponder scores')
+}))
+})
+
+
+export const AnswerSessionCheckInParams = zod.object({
+  "id": zod.coerce.string(),
+  "checkInId": zod.coerce.string()
+})
+
+export const answerSessionCheckInBodyChoiceMin = 0;
+export const answerSessionCheckInBodyChoiceMax = 3;
+
+
+
+export const AnswerSessionCheckInBody = zod.object({
+  "choice": zod.number().int().min(answerSessionCheckInBodyChoiceMin).max(answerSessionCheckInBodyChoiceMax),
+  "consent": zod.literal(true)
+})
+
+export const AnswerSessionCheckInResponse = zod.object({
+  "canManage": zod.boolean(),
+  "canRespond": zod.boolean(),
+  "sessionLive": zod.boolean(),
+  "prompts": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['checkin', 'poll']),
+  "prompt": zod.string(),
+  "options": zod.array(zod.string()),
+  "createdAt": zod.string(),
+  "closedAt": zod.string().nullable(),
+  "active": zod.boolean(),
+  "myChoice": zod.number().int().nullable(),
+  "results": zod.object({
+  "totalResponses": zod.number().int(),
+  "counts": zod.array(zod.number().int())
+}).nullable().describe('Only supplied to admins and the assigned presenter'),
+  "responses": zod.array(zod.object({
+  "name": zod.string(),
+  "choice": zod.number().int(),
+  "updatedAt": zod.string()
+})).describe('Empty for attendees; organizers see only people who voluntarily answered, never nonresponder scores')
+}))
+})
+
+
+export const CloseSessionCheckInParams = zod.object({
+  "id": zod.coerce.string(),
+  "checkInId": zod.coerce.string()
+})
+
+export const CloseSessionCheckInResponse = zod.object({
+  "canManage": zod.boolean(),
+  "canRespond": zod.boolean(),
+  "sessionLive": zod.boolean(),
+  "prompts": zod.array(zod.object({
+  "id": zod.string(),
+  "kind": zod.enum(['checkin', 'poll']),
+  "prompt": zod.string(),
+  "options": zod.array(zod.string()),
+  "createdAt": zod.string(),
+  "closedAt": zod.string().nullable(),
+  "active": zod.boolean(),
+  "myChoice": zod.number().int().nullable(),
+  "results": zod.object({
+  "totalResponses": zod.number().int(),
+  "counts": zod.array(zod.number().int())
+}).nullable().describe('Only supplied to admins and the assigned presenter'),
+  "responses": zod.array(zod.object({
+  "name": zod.string(),
+  "choice": zod.number().int(),
+  "updatedAt": zod.string()
+})).describe('Empty for attendees; organizers see only people who voluntarily answered, never nonresponder scores')
+}))
+})
+
+
 export const GetSessionCaptionsParams = zod.object({
   "id": zod.coerce.string()
 })
@@ -406,6 +553,25 @@ export const StopSessionCaptionsBody = zod.object({
 })
 
 export const StopSessionCaptionsResponse = zod.void()
+
+
+export const CreateSessionDiagnosticParams = zod.object({
+  "id": zod.coerce.string().uuid()
+})
+
+export const createSessionDiagnosticBodyDurationMsMin = 0;
+export const createSessionDiagnosticBodyDurationMsMax = 600000;
+
+
+
+export const CreateSessionDiagnosticBody = zod.object({
+  "consent": zod.literal(true),
+  "event": zod.enum(['connection_started', 'connection_ready', 'connection_failed', 'connection_timeout', 'connection_dropped', 'connection_reconnecting', 'device_access_failed', 'captions_starting', 'captions_ready', 'captions_failed', 'caption_first_result', 'caption_translation_failed']),
+  "source": zod.enum(['connection', 'camera', 'microphone', 'screen_share', 'captions', 'unknown']),
+  "durationMs": zod.number().int().min(createSessionDiagnosticBodyDurationMsMin).max(createSessionDiagnosticBodyDurationMsMax).optional()
+})
+
+export const CreateSessionDiagnosticResponse = zod.void()
 
 
 export const GetLiveKitStatusResponse = zod.object({

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { dash0Configuration, deliveryDescription, technicalRequest, type Delivery } from "../src/lib/telemetry-policy";
+import { CreateSessionDiagnosticBody } from "@workspace/api-zod";
 
 const config = dash0Configuration("https://ingress.eu-west-1.aws.dash0.com/v1/traces", "Bearer auth_TEST_ONLY_TOKEN");
 assert.equal(config.baseUrl, "https://ingress.eu-west-1.aws.dash0.com");
@@ -32,6 +33,14 @@ assert.deepEqual(
   dash0Configuration(config.baseUrl, "  auth_TEST_ONLY_TOKEN  ").headers,
   config.headers,
 );
+const diagnostic = { consent: true, event: "connection_ready", source: "connection", durationMs: 120 };
+assert.ok(CreateSessionDiagnosticBody.strict().safeParse(diagnostic).success);
+for (const invalid of [
+  { ...diagnostic, consent: false }, { ...diagnostic, event: "arbitrary_private_text" },
+  { ...diagnostic, source: "private_device_name" }, { ...diagnostic, durationMs: -1 },
+  { ...diagnostic, durationMs: 600001 }, { ...diagnostic, caption: "PRIVATE_TEXT" },
+  { ...diagnostic, token: "PRIVATE_TOKEN" }, { ...diagnostic, participantId: "PRIVATE_ID" },
+]) assert.equal(CreateSessionDiagnosticBody.strict().safeParse(invalid).success, false);
 
 assert.deepEqual(technicalRequest("GET", "/sessions/:id/live/captions", 200), {
   "http.request.method": "GET",

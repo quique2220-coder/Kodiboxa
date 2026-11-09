@@ -5,6 +5,130 @@
  * KODIBOXA event operations
  * OpenAPI spec version: 1.0.0
  */
+export type SessionDiagnosticInputEvent = typeof SessionDiagnosticInputEvent[keyof typeof SessionDiagnosticInputEvent];
+
+
+export const SessionDiagnosticInputEvent = {
+  connection_started: 'connection_started',
+  connection_ready: 'connection_ready',
+  connection_failed: 'connection_failed',
+  connection_timeout: 'connection_timeout',
+  connection_dropped: 'connection_dropped',
+  connection_reconnecting: 'connection_reconnecting',
+  device_access_failed: 'device_access_failed',
+  captions_starting: 'captions_starting',
+  captions_ready: 'captions_ready',
+  captions_failed: 'captions_failed',
+  caption_first_result: 'caption_first_result',
+  caption_translation_failed: 'caption_translation_failed',
+} as const;
+
+export type SessionDiagnosticInputSource = typeof SessionDiagnosticInputSource[keyof typeof SessionDiagnosticInputSource];
+
+
+export const SessionDiagnosticInputSource = {
+  connection: 'connection',
+  camera: 'camera',
+  microphone: 'microphone',
+  screen_share: 'screen_share',
+  captions: 'captions',
+  unknown: 'unknown',
+} as const;
+
+export interface SessionDiagnosticInput {
+  consent: true;
+  event: SessionDiagnosticInputEvent;
+  source: SessionDiagnosticInputSource;
+  /**
+     * @minimum 0
+     * @maximum 600000
+     */
+  durationMs?: number;
+}
+
+export type SessionCheckInInputKind = typeof SessionCheckInInputKind[keyof typeof SessionCheckInInputKind];
+
+
+export const SessionCheckInInputKind = {
+  checkin: 'checkin',
+  poll: 'poll',
+} as const;
+
+export interface SessionCheckInInput {
+  kind: SessionCheckInInputKind;
+  /**
+     * @minLength 1
+     * @maxLength 240
+     */
+  prompt: string;
+  /**
+     * @minItems 2
+     * @maxItems 4
+     * @items.minLength 1
+     * @items.maxLength 80
+     */
+  options: string[];
+}
+
+export interface SessionCheckInAnswer {
+  /**
+     * @minimum 0
+     * @maximum 3
+     */
+  choice: number;
+  consent: true;
+}
+
+export type SessionCheckInKind = typeof SessionCheckInKind[keyof typeof SessionCheckInKind];
+
+
+export const SessionCheckInKind = {
+  checkin: 'checkin',
+  poll: 'poll',
+} as const;
+
+export interface SessionCheckInResponder {
+  name: string;
+  choice: number;
+  updatedAt: string;
+}
+
+/**
+ * Only supplied to admins and the assigned presenter
+ * @nullable
+ */
+export type SessionCheckInResults = {
+  totalResponses: number;
+  counts: number[];
+} | null;
+
+export interface SessionCheckIn {
+  id: string;
+  kind: SessionCheckInKind;
+  prompt: string;
+  options: string[];
+  createdAt: string;
+  /** @nullable */
+  closedAt: string | null;
+  active: boolean;
+  /** @nullable */
+  myChoice: number | null;
+  /**
+     * Only supplied to admins and the assigned presenter
+     * @nullable
+     */
+  results: SessionCheckInResults;
+  /** Empty for attendees; organizers see only people who voluntarily answered, never nonresponder scores */
+  responses: SessionCheckInResponder[];
+}
+
+export interface SessionEngagement {
+  canManage: boolean;
+  canRespond: boolean;
+  sessionLive: boolean;
+  prompts: SessionCheckIn[];
+}
+
 export interface CrmContactInput {
   /**
      * @minLength 1

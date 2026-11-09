@@ -1,5 +1,7 @@
 import type { RequestHandler } from "express";
-import { SpanKind, SpanStatusCode, SeverityNumber } from "@opentelemetry/api";
+import { AsyncLocalStorage } from "node:async_hooks";
+import { ROOT_CONTEXT, trace, SpanKind, SpanStatusCode, SeverityNumber, type Context } from "@opentelemetry/api";
+import type { CreateSessionDiagnosticBody } from "@workspace/api-zod";
 import { resourceFromAttributes } from "@opentelemetry/resources";
 import { BatchSpanProcessor, SamplingDecision, TraceIdRatioBasedSampler, TracerProvider, type Sampler } from "@opentelemetry/sdk-trace";
 import { MeterProvider, PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
@@ -18,6 +20,10 @@ const delivery: Record<Signal, Delivery> = {
 let setupError: string | null = null;
 let started = false;
 let runtime: ReturnType<typeof createTelemetryRuntime> | null = null;
+type SessionDiagnostic = ReturnType<typeof CreateSessionDiagnosticBody.parse>;
+export type ObservedOperation = "registration.create" | "registration.reserve_room" | "attendance.check_in" | "attendance.check_out" | "database.transaction" | "payment.checkout" | "payment.settlement" | "stripe.checkout" | "video.issue_token";
+const requestContexts = new AsyncLocalStorage<Context>();
+const secondBuckets = [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 30];
 
 // Capture only exporter result codes, never provider error text, endpoints or headers.
 function monitorExporter<T>(exporter: T, signal: Signal): T {
@@ -45,10 +51,15 @@ function monitorExporter<T>(exporter: T, signal: Signal): T {
 
 // Exported for local collector tests; production callers validate config first.
 export function createTelemetryRuntime(config: ReturnType<typeof dash0Configuration>, sampleRatio = 0.1) {
+  const revision = /^[0-9a-f]{40}$/i.test(process.env.KODIBOXA_SOURCE_REVISION || "")
+    ? process.env.KODIBOXA_SOURCE_REVISION! : undefined;
   const resource = resourceFromAttributes({
     "service.name": "kodiboxa-api",
     "service.namespace": "kodiboxa",
     "deployment.environment.name": process.env.NODE_ENV === "production" ? "production" : "development",
+    "service.version": revision?.slice(0, 12) || (process.env.NODE_ENV === "production" ? "unversioned" : "development-unreleased"),
+    "vcs.repository.url": "https://github.com/quique2220-coder/Kodiboxa",
+    ...(revision ? { "vcs.ref.head.revision": revision } : {}),
   });
   const options = (signal: Signal) => ({
     url: `${config.baseUrl}/v1/${signal}`, headers: config.headers,
@@ -90,10 +101,51 @@ export function createTelemetryRuntime(config: ReturnType<typeof dash0Configurat
   const meter = metrics.getMeter("kodiboxa.http");
   const technicalLogs = logs.getLogger("kodiboxa.http");
   const requests = meter.createCounter("kodiboxa_http_requests_total", { description: "Completed API requests, including unsampled requests." });
-  const duration = meter.createHistogram("kodiboxa_http_request_duration_seconds", { unit: "s", description: "API request duration." });
+  const duration = meter.createHistogram("kodiboxa_http_request_duration_seconds", {
+    unit: "s", description: "API request duration.",
+    advice: { explicitBucketBoundaries: secondBuckets },
+  });
+  const diagnosticCount = meter.createCounter("kodiboxa_client_diagnostics_total", { description: "Opt-in, client-reported technical events. Not authoritative attendance or attention." });
+  const diagnosticDuration = meter.createHistogram("kodiboxa_client_operation_duration_seconds", { unit: "s", advice: { explicitBucketBoundaries: secondBuckets } });
+  const operationCount = meter.createCounter("kodiboxa_operations_total", { description: "Bounded technical operation outcomes, without order or attendee identifiers." });
+  const operationDuration = meter.createHistogram("kodiboxa_operation_duration_seconds", { unit: "s", advice: { explicitBucketBoundaries: secondBuckets } });
   const heartbeats = meter.createCounter("kodiboxa_telemetry_heartbeat_total", { description: "Monitoring connection verification probes." });
   let logWindow = 0;
   let logCount = 0;
+  function technicalError(body: string, attributes: Record<string, string | number | boolean>, context?: Context) {
+    const window = Math.floor(Date.now() / 60_000);
+    if (window !== logWindow) { logWindow = window; logCount = 0; }
+    if (logCount++ < 20) technicalLogs.emit({
+      severityNumber: SeverityNumber.ERROR, severityText: "ERROR", body, attributes, context,
+    });
+  }
+  function diagnostic(input: SessionDiagnostic, role: "participant" | "presenter" | "admin") {
+    const attributes = { "diagnostic.event": input.event, "diagnostic.source": input.source, "diagnostic.role": role, "diagnostic.origin": "client_reported" };
+    diagnosticCount.add(1, attributes);
+    if (input.durationMs !== undefined) diagnosticDuration.record(input.durationMs / 1000, attributes);
+    if (/_failed$|_timeout$|_dropped$/.test(input.event)) technicalError("client.diagnostic.failure", attributes, requestContexts.getStore());
+  }
+  async function operation<T>(name: ObservedOperation, run: () => Promise<T>): Promise<T> {
+    const parent = requestContexts.getStore() || ROOT_CONTEXT;
+    const span = tracer.startSpan(name, { attributes: { "operation.name": name } }, parent);
+    const context = trace.setSpan(parent, span);
+    const startedAt = performance.now();
+    let outcome = "success";
+    try {
+      return await requestContexts.run(context, run);
+    } catch (error) {
+      outcome = "failure";
+      span.setStatus({ code: SpanStatusCode.ERROR });
+      technicalError("operation.failed", { "operation.name": name, "operation.outcome": outcome }, context);
+      throw error; // Preserve the original error and transaction/checkout behavior.
+    } finally {
+      const attributes = { "operation.name": name, "operation.outcome": outcome };
+      operationCount.add(1, attributes);
+      operationDuration.record(Math.max(0, performance.now() - startedAt) / 1000, attributes);
+      span.setAttribute("operation.outcome", outcome);
+      span.end();
+    }
+  }
 
   function probe() {
     const span = tracer.startSpan("telemetry.connection.verify", { attributes: { "kodiboxa.telemetry.probe": true } });
@@ -112,6 +164,7 @@ export function createTelemetryRuntime(config: ReturnType<typeof dash0Configurat
   const observe: RequestHandler = (req, res, next) => {
     const startedAt = performance.now();
     const span = tracer.startSpan("HTTP request", { kind: SpanKind.SERVER });
+    const context = trace.setSpan(ROOT_CONTEXT, span);
     let complete = false;
     const finish = (aborted: boolean) => {
       if (complete) return;
@@ -124,21 +177,14 @@ export function createTelemetryRuntime(config: ReturnType<typeof dash0Configurat
       span.end();
       requests.add(1, attrs); duration.record(seconds, attrs);
       // Deliberately do not forward Pino logs or exception messages/stack traces.
-      if (attrs["http.response.status_code"] >= 500) {
-        const window = Math.floor(Date.now() / 60_000);
-        if (window !== logWindow) { logWindow = window; logCount = 0; }
-        if (logCount++ < 20) technicalLogs.emit({
-          severityNumber: SeverityNumber.ERROR, severityText: "ERROR",
-          body: "http.server.error", attributes: attrs,
-        });
-      }
+      if (attrs["http.response.status_code"] >= 500) technicalError("http.server.error", attrs, context);
     };
     res.once("finish", () => finish(false));
     res.once("close", () => finish(!res.writableFinished));
-    next();
+    requestContexts.run(context, next);
   };
   return {
-    observe, probe, flush,
+    observe, probe, flush, diagnostic, operation,
     shutdown: async () => {
       await flush();
       await Promise.allSettled([traces.shutdown(), metrics.shutdown(), logs.shutdown()]);
@@ -182,3 +228,13 @@ export function telemetryDelivery() {
   return Object.fromEntries(Object.entries(delivery).map(([signal, state]) => [signal, { ...state }]));
 }
 export async function shutdownTelemetry() { await runtime?.shutdown(); }
+
+export function recordSessionDiagnostic(input: SessionDiagnostic, role: "participant" | "presenter" | "admin") {
+  if (!runtime) return false;
+  runtime.diagnostic(input, role);
+  return true;
+}
+
+export function withTelemetryOperation<T>(name: ObservedOperation, run: () => Promise<T>): Promise<T> {
+  return runtime ? runtime.operation(name, run) : run();
+}

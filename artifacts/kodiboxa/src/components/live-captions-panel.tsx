@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { SessionCaption } from '@workspace/api-client-react';
 import { useCaptionCapture, useCaptionFeed } from '@/hooks/use-live-captions';
+import { useSessionDiagnostic } from '@/components/session-diagnostics';
 
 type View = 'original' | 'en' | 'es' | 'both';
 type Lang = 'en' | 'es';
@@ -38,6 +39,19 @@ function Caption({ c, view }: { c: SessionCaption; view: View }) {
 
 function PresenterControls({ sessionId, serverActive, mergeCaption }: { sessionId: string; serverActive: boolean; mergeCaption: (c: SessionCaption) => void }) {
   const cap = useCaptionCapture(sessionId, mergeCaption);
+  const report = useSessionDiagnostic();
+  const startedAt = useRef<number | null>(null);
+  useEffect(() => {
+    if (cap.status === 'starting') {
+      startedAt.current = performance.now();
+      report('captions_starting', 'captions');
+    } else if (cap.status === 'running') {
+      report('captions_ready', 'captions', startedAt.current === null ? undefined : performance.now() - startedAt.current);
+    }
+  }, [cap.status, report]);
+  useEffect(() => {
+    if (cap.error) report('captions_failed', 'captions');
+  }, [cap.error, report]);
   const [lang, setLang] = useState<Lang | ''>('');
   const [consent, setConsent] = useState(false);
   const [asking, setAsking] = useState(false);
@@ -115,6 +129,20 @@ export function LiveCaptionsPanel({ sessionId, role }: { sessionId: string; role
   const data = feed.data;
   const captions = data?.captions ?? [];
   const last = captions[captions.length - 1];
+  const report = useSessionDiagnostic();
+  const openedAt = useRef(performance.now());
+  const firstReported = useRef(false);
+  const translationFailure = useRef<string | null>(null);
+  useEffect(() => {
+    if (captions.length && !firstReported.current) {
+      firstReported.current = true;
+      report('caption_first_result', 'captions', performance.now() - openedAt.current);
+    }
+    if (last?.translationStatus === 'unavailable' && translationFailure.current !== last.id) {
+      translationFailure.current = last.id;
+      report('caption_translation_failed', 'captions');
+    }
+  }, [captions.length, last?.id, last?.translationStatus, report]);
 
   useEffect(() => {
     const el = listRef.current;

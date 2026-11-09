@@ -6,6 +6,7 @@ import eventCommerceRouter from "./event-commerce";
 import roomAttendanceRouter from "./room-attendance";
 import crmRouter from "./crm";
 import livekitRouter from "./livekit";
+import diagnosticsRouter from "./diagnostics";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(eventCommerceRouter);
 router.use(roomAttendanceRouter);
 router.use(crmRouter);
 router.use(livekitRouter);
+router.use(diagnosticsRouter);
 
 export default router;
